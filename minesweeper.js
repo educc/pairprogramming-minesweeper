@@ -1,73 +1,115 @@
+const prompt = require("prompt-async");
 
 class Game {
+  #BOARD_BOMB_CELL_HAS_BOMB = 1;
+  #BOARD_BOMB_CELL_EMPTY = 0;
 
-  #CELL_IS_EMPTY = 0;
-  #CELL_HAS_BOMB = 1;
-  #CELL_USER_PLAYED = 2;
+  #BOARD_GAME_CELL_UNTOUCH = "-";
 
-  constructor(bombCount) {
+  constructor(bombCount, boardSize) {
     this.bombCount = bombCount;
-    this.board = [
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0]
-    ]
+    this.boardSize = boardSize;
+    this.boardBombsMatrix = this.#createBoard(boardSize, this.#BOARD_BOMB_CELL_EMPTY);
+    this.boardGameMatrix = this.#createBoard(boardSize, this.#BOARD_GAME_CELL_UNTOUCH);
 
     this.#placeBombs();
+  }
+
+  #createBoard(maxColumns, defaultValue) {
+    const result = [];
+
+    for (let i = 0; i < maxColumns; i++) {
+      const myArray = [];
+      for (let j = 0; j < maxColumns; j++) {
+        myArray.push(defaultValue);
+      }
+
+      result.push(myArray);
+    }
+
+    return result;
   }
 
   #placeBombs() {
     //change 0 by 1 to put a bomb
     for (let i = 0; i < this.bombCount; i++) {
-      let row = 0; //TODO: make it random
-      let col = 0; //TODO: make it random
+      let row = Math.floor(Math.random() * this.boardSize);
+      let col = Math.floor(Math.random() * this.boardSize);
 
-      this[row][col] = CELL_HAS_BOMB;
+      this.boardBombsMatrix[row][col] = this.#BOARD_BOMB_CELL_HAS_BOMB;
     }
   }
 
-  jugar(row, col) {
-    if (this.board[row][col] === 1) {
-      return true;
+  play(row, col) {
+    if (this.boardBombsMatrix[row][col] === 1) {
+      this.boardGameMatrix[row][col] = "*";
+      return true; // El jugador ha encontrado una bomba
+    } else {
+      this.boardGameMatrix[row][col] = this.#countNearBombs(row, col);
+      return false;
     }
-    this.board[row][col] = CELL_USER_PLAYED;
-    return false;
   }
 
   get boardGame() {
-    return this.board;
+    return this.boardGameMatrix;
+  }
+
+  #countNearBombs(row, col) {
+    //TODO: Use the this.boardBombsMatrix
+    return 0;
   }
 
 }
 
 function renderGame(game) {
   const rows = game.boardGame;
-  let rendered = "";
+  let rendered = "    ";
 
 
-  //TODO: ocultar donde estan las bombas y las casillas no jugadas
+  for (let i = 0; i < rows.length; i++) {
+    rendered += i + " "
+  }
+
+  rendered += "\n";
+  rendered += "---------------------";
+  rendered += "\n";
 
   for (let i = 0; i < rows.length; i++) {
     let singleRow = rows[i];
 
+
+    rendered += i + " | ";
     for (let j = 0; j < singleRow.length; j++) {
-      rendered += singleRow[j] + ", "
+      rendered += singleRow[j] + " ";
     }
     rendered += "\n";
   }
 
   console.log(rendered);
+  console.log("\n");
 }
 
-function main() {
-  const myGame = new Game();
-  renderGame(myGame)
+async function main() {
+  const myGame = new Game(0, 2);
+  let playerLost = false;
+  renderGame(myGame);
+
+  // Bucle para jugar (ingresar datos y renderizar juego)
+  while (!playerLost) {
+    const { row, column } = await prompt.get(["row", "column"]);
+
+    playerLost = myGame.play(row, column);
+
+    //TODO: what about win the game
+
+    renderGame(myGame);
+  }
+
+  if (playerLost) {
+    console.log("You lose");
+  }
 }
 
 main();
+
+
